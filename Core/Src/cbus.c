@@ -53,28 +53,28 @@ static void scheduleCommandResponse(uint8_t cmd, uint8_t size, uint8_t *pBytes) 
   scheduleTX((size * 2) + 3);
 
   //
-  switch (size) {
-    case 0:
-      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d\r\n", cmd, size);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-    case 1:
-      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X\r\n", cmd, size, bytesOut[3]);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-    case 2:
-      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5]);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-    case 3:
-      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7]);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-    default:
-      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7], bytesOut[9]);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-  }
+//  switch (size) {
+//    case 0:
+//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d\r\n", cmd, size);
+//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+//      break;
+//    case 1:
+//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X\r\n", cmd, size, bytesOut[3]);
+//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+//      break;
+//    case 2:
+//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5]);
+//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+//      break;
+//    case 3:
+//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7]);
+//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+//      break;
+//    default:
+//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7], bytesOut[9]);
+//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+//      break;
+//  }
 }
 
 static void SRQ_startHandshake(void) {
@@ -126,27 +126,21 @@ static void changeDisc(uint8_t n) {
 }
 
 static void changeTrack(uint8_t n) {
-  if (!initDone) return;
+  if (!initDone || discChangeStarted) return;
 
-  uint8_t dir = 0; // 0 - prev, 1 - next
-
-  if (trackNumber == 3 && n == 1) {
-    dir = 1;
-  } else if (trackNumber == 1 && n == 3) {
-    dir = 0;
-  } else if (n > trackNumber) {
-    dir = 1;
-  }
-
-  if (!discChangeStarted) {
-    if (dir == 0) {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev track\r\n", 14, 100);
-    } else {
+  switch (n) {
+    case 1:
+      HAL_UART_Transmit(&huart1, (uint8_t *)"Play\r\n", 8, 100);
+      break;
+    case 2:
       HAL_UART_Transmit(&huart1, (uint8_t *)"Next track\r\n", 14, 100);
-    }
+      break;
+    case 3:
+      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev track\r\n", 14, 100);
+      break;
+    default:
+      break;
   }
-
-  trackNumber = n;
 }
 
 static void handleCmd(uint8_t cmd) {
@@ -195,16 +189,7 @@ static void handleCmd(uint8_t cmd) {
       break;
     }
 
-    // play/pause
-    case 0x5B: {
-      uartBufLen = sprintf(uartBuf, ">Play\r\n");
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      uint8_t data[3] = { 0x00, 0x01, 0x00 };
-      scheduleCommandResponse(cmd, 3, data);
-      break;
-    }
-
-    // play/pause
+    // pause
     case 0x59: {
       uartBufLen = sprintf(uartBuf, "Pause\r\n");
       HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
