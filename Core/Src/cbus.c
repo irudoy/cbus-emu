@@ -106,28 +106,22 @@ static void SRQ_scheduleEnd(void) {
 static void changeDisc(uint8_t n) {
   if (!initDone) return;
 
-  uint8_t dir = 0; // 0 - prev, 1 - next
-
-  if (discNumber == n) {
-    uartBufLen = sprintf(uartBuf, "Btn #%d\r\n", n);
-    HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-  } else {
-    if (discNumber == 6 && n == 1) {
-      dir = 1;
-    } else if (discNumber == 1 && n == 6) {
-      dir = 0;
-    } else if (n > discNumber) {
-      dir = 1;
-    }
-
-    if (dir == 0) {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev disc\r\n", 13, 100);
-    } else {
+  switch (n) {
+    case 1:
+    case 3 ... 5:
+      uartBufLen = sprintf(uartBuf, "Btn #%d\r\n", n);
+      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+      break;
+    case 2:
       HAL_UART_Transmit(&huart1, (uint8_t *)"Next disc\r\n", 13, 100);
-    }
+      break;
+    case 6:
+      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev disc\r\n", 13, 100);
+      break;
+    default:
+      break;
   }
 
-  discNumber = n;
   discChangeStarted = 1;
 }
 
