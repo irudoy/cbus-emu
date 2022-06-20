@@ -241,13 +241,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(CBUS_SDA_O_GPIO_Port, CBUS_SDA_O_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CBUS_SRQ_GPIO_Port, CBUS_SRQ_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(CBUS_SRQ_O_GPIO_Port, CBUS_SRQ_O_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : CBUS_CLK_Pin */
   GPIO_InitStruct.Pin = CBUS_CLK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(CBUS_CLK_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CBUS_SDA_Pin */
+  GPIO_InitStruct.Pin = CBUS_SDA_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(CBUS_SDA_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CBUS_SDA_O_Pin */
   GPIO_InitStruct.Pin = CBUS_SDA_O_Pin;
@@ -256,18 +262,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CBUS_SDA_O_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CBUS_SDA_Pin */
-  GPIO_InitStruct.Pin = CBUS_SDA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(CBUS_SDA_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CBUS_SRQ_Pin */
-  GPIO_InitStruct.Pin = CBUS_SRQ_Pin;
+  /*Configure GPIO pin : CBUS_SRQ_O_Pin */
+  GPIO_InitStruct.Pin = CBUS_SRQ_O_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(CBUS_SRQ_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(CBUS_SRQ_O_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);

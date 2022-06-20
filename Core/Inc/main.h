@@ -60,12 +60,12 @@ void Error_Handler(void);
 #define CBUS_CLK_Pin GPIO_PIN_0
 #define CBUS_CLK_GPIO_Port GPIOA
 #define CBUS_CLK_EXTI_IRQn EXTI0_1_IRQn
+#define CBUS_SDA_Pin GPIO_PIN_1
+#define CBUS_SDA_GPIO_Port GPIOB
 #define CBUS_SDA_O_Pin GPIO_PIN_8
 #define CBUS_SDA_O_GPIO_Port GPIOA
-#define CBUS_SDA_Pin GPIO_PIN_11
-#define CBUS_SDA_GPIO_Port GPIOA
-#define CBUS_SRQ_Pin GPIO_PIN_5
-#define CBUS_SRQ_GPIO_Port GPIOB
+#define CBUS_SRQ_O_Pin GPIO_PIN_5
+#define CBUS_SRQ_O_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

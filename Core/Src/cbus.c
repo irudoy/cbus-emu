@@ -81,14 +81,14 @@ static void SRQ_startHandshake(void) {
   SRQ_riseState = SRQ_STATE_IDLE;
   SRQ_started = 1;
 
-  CBUS_SRQ_GPIO_Port->BSRR = (uint32_t)CBUS_SRQ_Pin; // set to HI to turn SRQ LO
+  CBUS_SRQ_O_GPIO_Port->BSRR = (uint32_t)CBUS_SRQ_O_Pin; // set to HI to turn SRQ LO
 }
 
 static void SRQ_endHandshake(void) {
   SRQ_fallState = SRQ_STATE_IDLE;
   SRQ_started = 0;
 
-  CBUS_SRQ_GPIO_Port->BRR = (uint32_t)CBUS_SRQ_Pin; // set to LO to turn SRQ HI
+  CBUS_SRQ_O_GPIO_Port->BRR = (uint32_t)CBUS_SRQ_O_Pin; // set to LO to turn SRQ HI
 
   bytesOut[0] = 0xF7;
   scheduleTX(1);
