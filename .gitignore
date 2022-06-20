@@ -7,6 +7,6 @@
 .settings
 [Rr]elease
 [Dd]ebug
-.launch
+*.launch
 
 TouchGFX/build
