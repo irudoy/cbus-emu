@@ -1,7 +1,7 @@
 #include "cbus.h"
 
 extern TIM_HandleTypeDef htim2;
-extern UART_HandleTypeDef huart1;
+extern CAN_HandleTypeDef hcan;
 
 volatile uint8_t FC_state = FC_STATE_RX;
 volatile uint8_t incomingByte = 0x00;
@@ -27,8 +27,14 @@ uint8_t discChangeStarted = 0;
 volatile uint8_t SRQ_riseState = SRQ_STATE_IDLE;
 volatile uint8_t SRQ_fallState = SRQ_STATE_IDLE;
 
-char uartBuf[50];
-int uartBufLen;
+CAN_TxHeaderTypeDef CANTxHeader;
+uint8_t CANTxData[1];
+uint32_t CANTxMailbox;
+
+static void broadcastCommand(uint8_t byte) {
+  CANTxData[0] = byte;
+  HAL_CAN_AddTxMessage(&hcan, &CANTxHeader, CANTxData, &CANTxMailbox);
+}
 
 static void deInit() {
   initDone = 0;
@@ -51,30 +57,6 @@ static void scheduleCommandResponse(uint8_t cmd, uint8_t size, uint8_t *pBytes) 
     }
   }
   scheduleTX((size * 2) + 3);
-
-  //
-//  switch (size) {
-//    case 0:
-//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d\r\n", cmd, size);
-//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-//      break;
-//    case 1:
-//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X\r\n", cmd, size, bytesOut[3]);
-//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-//      break;
-//    case 2:
-//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5]);
-//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-//      break;
-//    case 3:
-//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7]);
-//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-//      break;
-//    default:
-//      uartBufLen = sprintf(uartBuf, "CMD 0x%02X, len %d, 0x%02X 0x%02X 0x%02X 0x%02X\r\n", cmd, size, bytesOut[3], bytesOut[5], bytesOut[7], bytesOut[9]);
-//      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-//      break;
-//  }
 }
 
 static void SRQ_startHandshake(void) {
@@ -107,17 +89,12 @@ static void changeDisc(uint8_t n) {
   if (!initDone) return;
 
   switch (n) {
-    case 1:
-    case 3 ... 5:
-      uartBufLen = sprintf(uartBuf, "Btn #%d\r\n", n);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
-      break;
-    case 2:
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Next disc\r\n", 13, 100);
-      break;
-    case 6:
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev disc\r\n", 13, 100);
-      break;
+    case 1: broadcastCommand(CBUS_EMU_CAN_CMD_1); break;
+    case 2: broadcastCommand(CBUS_EMU_CAN_CMD_UP); break;
+    case 3: broadcastCommand(CBUS_EMU_CAN_CMD_3); break;
+    case 4: broadcastCommand(CBUS_EMU_CAN_CMD_4); break;
+    case 5: broadcastCommand(CBUS_EMU_CAN_CMD_5); break;
+    case 6: broadcastCommand(CBUS_EMU_CAN_CMD_DOWN); break;
     default:
       break;
   }
@@ -129,15 +106,9 @@ static void changeTrack(uint8_t n) {
   if (!initDone || discChangeStarted) return;
 
   switch (n) {
-    case 1:
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Play\r\n", 8, 100);
-      break;
-    case 2:
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Next track\r\n", 14, 100);
-      break;
-    case 3:
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Prev track\r\n", 14, 100);
-      break;
+    case 1: broadcastCommand(CBUS_EMU_CAN_CMD_PLAY_PAUSE); break;
+    case 2: broadcastCommand(CBUS_EMU_CAN_CMD_RIGHT); break;
+    case 3: broadcastCommand(CBUS_EMU_CAN_CMD_LEFT); break;
     default:
       break;
   }
@@ -150,7 +121,6 @@ static void handleCmd(uint8_t cmd) {
       if (SRQ_started == 1) {
         SRQ_scheduleEnd(); // SRQ success, release
       } else {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Init...\r\n", 11, 100);
         // init seq
         deInit();
         bytesOut[0] = cmd;
@@ -175,7 +145,6 @@ static void handleCmd(uint8_t cmd) {
 
     // pre de-init
     case 0x44: {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Pre de-init\r\n", 15, 100);
       uint8_t data[3] = { 0x00, 0x09, 0x00 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -184,15 +153,13 @@ static void handleCmd(uint8_t cmd) {
     // de-init
     case 0x01: {
       deInit();
-      HAL_UART_Transmit(&huart1, (uint8_t *)"De-init\r\n", 14, 100);
       scheduleCommandResponse(cmd, 0, NULL);
       break;
     }
 
     // pause
     case 0x59: {
-      uartBufLen = sprintf(uartBuf, "Pause\r\n");
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
+      broadcastCommand(CBUS_EMU_CAN_CMD_PLAY_PAUSE);
       uint8_t data[3] = { 0x00, 0x01, 0x00 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -200,7 +167,7 @@ static void handleCmd(uint8_t cmd) {
 
     // repeat on
     case 0x58: {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Repeat ON\r\n", 13, 100);
+      broadcastCommand(CBUS_EMU_CAN_CMD_REPEAT);
       uint8_t data[3] = { 0x00, 0x11, 0x04 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -208,7 +175,7 @@ static void handleCmd(uint8_t cmd) {
 
     // repeat off
     case 0x56: {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Repeat OFF\r\n", 14, 100);
+      broadcastCommand(CBUS_EMU_CAN_CMD_REPEAT);
       uint8_t data[3] = { 0x00, 0x11, 0x04 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -216,7 +183,7 @@ static void handleCmd(uint8_t cmd) {
 
     // scan on
     case 0x55: {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Scan ON\r\n", 11, 100);
+      broadcastCommand(CBUS_EMU_CAN_CMD_SCAN);
       uint8_t data[3] = { 0x00, 0x01, 0x00 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -224,7 +191,7 @@ static void handleCmd(uint8_t cmd) {
 
     // scan off
     case 0x51: {
-      HAL_UART_Transmit(&huart1, (uint8_t *)"Scan OFF\r\n", 12, 100);
+      broadcastCommand(CBUS_EMU_CAN_CMD_SCAN);
       uint8_t data[3] = { 0x00, 0x11, 0x00 };
       scheduleCommandResponse(cmd, 3, data);
       break;
@@ -325,14 +292,19 @@ static void handleCmd(uint8_t cmd) {
     }
 
     default:
-      uartBufLen = sprintf(uartBuf, "Unknown byte: 0x%02X \r\n", cmd);
-      HAL_UART_Transmit(&huart1, (uint8_t *)uartBuf, uartBufLen, 100);
       break;
   }
 }
 
 void CBUS_main(void) {
   HAL_TIM_Base_Start(&htim2);
+
+  HAL_CAN_Start(&hcan);
+
+  CANTxHeader.DLC = 1;
+  CANTxHeader.IDE = CAN_ID_STD;
+  CANTxHeader.RTR = CAN_RTR_DATA;
+  CANTxHeader.StdId = CBUS_EMU_CAN_ID;
 }
 
 void CBUS_tick(void) {
@@ -341,7 +313,7 @@ void CBUS_tick(void) {
     handleCmd(incomingByte);
   }
   if (SRQ_riseState == SRQ_STATE_READY) {
-    HAL_Delay(20); // TODO: no delay
+    HAL_Delay(20);
     SRQ_startHandshake();
   }
   if (SRQ_fallState == SRQ_STATE_READY) {

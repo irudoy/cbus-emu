@@ -5,6 +5,20 @@
 #include "string.h"
 #include "stdio.h"
 
+#define CBUS_EMU_CAN_ID 0x669
+
+#define CBUS_EMU_CAN_CMD_LEFT 0x01
+#define CBUS_EMU_CAN_CMD_RIGHT 0x02
+#define CBUS_EMU_CAN_CMD_UP 0x03
+#define CBUS_EMU_CAN_CMD_DOWN 0x04
+#define CBUS_EMU_CAN_CMD_PLAY_PAUSE 0x05
+#define CBUS_EMU_CAN_CMD_1 0x06
+#define CBUS_EMU_CAN_CMD_3 0x07
+#define CBUS_EMU_CAN_CMD_4 0x08
+#define CBUS_EMU_CAN_CMD_5 0x09
+#define CBUS_EMU_CAN_CMD_REPEAT 0x10
+#define CBUS_EMU_CAN_CMD_SCAN 0x11
+
 #define FC_STATE_RX 0
 #define FC_STATE_TX 1
 
